@@ -148,16 +148,16 @@ pub fn load(allocator: std.mem.Allocator, filename: []const u8, tex: *gl.uint) !
 
     gl.BindTexture(target, tex.*);
 
-    // The original C++ code did something crazy, using ftell to get the current pointer
-    // and getting a pointer representing the end of the file.
+    // The original C++ code did something crazy, using ftell to get the current
+    // pointer location and getting another pointer representing the end of the file.
     // The current pointer is not the actual starting point of the fetch because it needs
     // to be set an offset by header.keypairbytes.
     // Luckily, zig file reader has enough functionality to have a work around, thus:
     var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
 
-    // with an aid of an arena allocator, we don't all the ftell, fseek and memset madness
-    // because we have two overkill functions to replace :
+    // with an aid of an arena allocator, we don't need all the ftell, fseek and memset madness
+    // because we now have two overkill functions :
     //
     // - fp.skipBytes(num_bytes: u64, comptime options: SkipBytesOptions)
     // - fp.readAllAlloc(allocator: Allocator, max_size: usize)
