@@ -189,10 +189,12 @@ pub fn load(allocator: std.mem.Allocator, filename: []const u8, tex: *gl.uint) !
         gl.TEXTURE_CUBE_MAP_ARRAY => {
             processCubeMapArrayTexture(&header, data);
         },
-        else => {},
+        else => {
+            return error.IllegalTextureTarget;
+        },
     }
 
-    return 0;
+    return tex.*;
 }
 
 fn process1DTexture(header: *Header, data: []u8) void {
@@ -215,7 +217,6 @@ fn process1DTexture(header: *Header, data: []u8) void {
 
 fn process2DTexture(header: *Header, data: []u8) void {
     if (header.gltype == gl.NONE) {
-
         // I have no idea about this magic number which is completely made up from the original C++ code
         const image_size: gl.sizei = 420 * (380 >> 1);
 
@@ -261,13 +262,12 @@ fn process2DTexture(header: *Header, data: []u8) void {
                 @intCast(header.gltype),
                 ptr,
             );
+            // I have no idea what did the original library does in this part,
+            // so in order to make things work, I have to copy the logic directly
+            ptr += height * calculateStride(header, width, 1);
+            height = if (height >> 1 != 0) height >> 1 else 1;
+            width = if (width >> 1 != 0) width >> 1 else 1;
         }
-
-        // I have no idea what did the original library does in this part,
-        // so in order to make things work, I have to copy the logic directly
-        ptr += height * calculateStride(header, width, 1);
-        height = if (height >> 1 != 0) height >> 1 else 1;
-        width = if (width >> 1 != 0) width >> 1 else 1;
     }
 }
 

@@ -17,19 +17,17 @@ pub fn main() !void {
 
     // "override" your program using function pointer,
     // and the run function will process them all
-    std.mem.copyForwards(u8, &app.info.title, "KTX Viewer");
 
+    app.init = init;
     app.start_up = startup;
     app.render = render;
     app.shutdown = shutdown;
     app.run();
 }
 
-fn getProcAddr(procname: [*:0]const u8) callconv(.c) ?*const fn () callconv(.c) void {
-
-    // app.glfw.getProcAddress(procname)
-
-    return @as(@TypeOf(getProcAddr), @alignCast(app.glfw.getProcAddress(procname)));
+fn init() anyerror!void {
+    std.mem.copyForwards(u8, &app.info.title, "KTX Viewer");
+    app.info.flags.cursor = app.gl.TRUE;
 }
 
 fn startup() callconv(.c) void {
@@ -46,9 +44,11 @@ fn startup() callconv(.c) void {
         std.debug.print("Texture Load Failed: {any}", .{err});
     };
 
+    app.gl.BindTexture(app.gl.TEXTURE_2D, texture);
+
     // compilation of shaders and programs
-    var success: c_int = app.gl.TRUE;
-    var infoLog: [128:0]u8 = undefined;
+    var success: c_int = undefined;
+    var infoLog: [512:0]u8 = undefined;
 
     // vertex shader
     const vs: app.gl.uint = app.gl.CreateShader(app.gl.VERTEX_SHADER);
@@ -59,7 +59,7 @@ fn startup() callconv(.c) void {
         &.{shader.vertexShaderImpl.len},
     );
     app.gl.CompileShader(vs);
-    app.verifyProgram(vs, &success, &infoLog) catch {
+    app.verifyShader(vs, &success, &infoLog) catch {
         return;
     };
 
@@ -72,32 +72,36 @@ fn startup() callconv(.c) void {
         &.{@as(c_int, @intCast(shader.fragmentShaderImpl.len))},
     );
     app.gl.CompileShader(fs);
-    app.verifyProgram(fs, &success, &infoLog) catch {
+    app.verifyShader(fs, &success, &infoLog) catch {
         return;
     };
 
+    program = app.gl.CreateProgram();
     app.gl.AttachShader(program, vs);
     app.gl.AttachShader(program, fs);
 
-    program = app.gl.CreateProgram();
     app.gl.LinkProgram(program);
     app.gl.GenVertexArrays(1, (&vao)[0..1]);
 
     app.gl.BindVertexArray(vao);
 }
 
-fn render(_: f64) callconv(.c) void {
+fn render(current_time: f64) callconv(.c) void {
     const green: [4]app.gl.float = .{ 0.0, 0.25, 0.0, 1.0 };
     app.gl.ClearBufferfv(app.gl.COLOR, 0, &green);
 
     app.gl.UseProgram(program);
-    app.gl.DrawArrays(app.gl.TRIANGLES, 0, 3);
+    app.gl.Viewport(0, 0, app.info.windowWidth, app.info.windowHeight);
+    // app.gl.Uniform1f(1, @floatCast(std.math.sin(std.math.degreesToRadians(current_time)) * 16.0 + 16.0));
+    app.gl.Uniform1f(1, @floatCast(std.math.sin(current_time) * 16.0 + 16.0));
+    app.gl.DrawArrays(app.gl.TRIANGLE_STRIP, 0, 4);
 }
 
 fn shutdown() callconv(.c) void {
     app.gl.BindVertexArray(0);
     app.gl.DeleteVertexArrays(1, (&vao)[0..1]);
     app.gl.DeleteProgram(program);
+    app.gl.DeleteTextures(1, (&texture)[0..1]);
 }
 
 test "all tests" {

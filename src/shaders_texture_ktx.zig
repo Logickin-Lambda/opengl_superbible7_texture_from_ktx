@@ -28,6 +28,6 @@ pub const fragmentShaderImpl =
     \\ 
     \\ void main(void)
     \\ {
-    \\     color = texture(s, gl_FragCoord.xy/ texture(s, 0)) * exposure;
+    \\     color = texture(s, gl_FragCoord.xy/ textureSize(s, 0)) * exposure;
     \\ }
 ;
