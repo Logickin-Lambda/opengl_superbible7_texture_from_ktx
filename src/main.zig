@@ -8,6 +8,7 @@ const shader = @import("shaders_texture_ktx.zig");
 var program: app.gl.uint = undefined;
 var vao: app.gl.uint = undefined;
 var texture: app.gl.uint = undefined;
+var uni_exposure: app.gl.int = undefined;
 
 pub fn main() !void {
     // Many people seem to hate the dynamic loading part of the program.
@@ -84,6 +85,8 @@ fn startup() callconv(.c) void {
     app.gl.GenVertexArrays(1, (&vao)[0..1]);
 
     app.gl.BindVertexArray(vao);
+
+    uni_exposure = app.gl.GetUniformLocation(program, "exposure");
 }
 
 fn render(current_time: f64) callconv(.c) void {
@@ -101,7 +104,7 @@ fn shutdown() callconv(.c) void {
     app.gl.BindVertexArray(0);
     app.gl.DeleteVertexArrays(1, (&vao)[0..1]);
     app.gl.DeleteProgram(program);
-    app.gl.DeleteTextures(1, (&texture)[0..1]);
+    app.gl.DeleteTextures(uni_exposure, (&texture)[0..1]);
 }
 
 test "all tests" {
